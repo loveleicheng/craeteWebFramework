@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"gan"
 	"net/http"
 )
@@ -9,12 +8,15 @@ import (
 func main() {
 	g := gan.NewEngine()
 
-	g.GET("/", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintf(w, "you visited: %q", r.URL.Path)
+	g.GET("/hello", func(c *gan.Context) {
+		c.String(http.StatusOK, "visited: %q\n", c.Path)
 	})
 
-	g.GET("/hello", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintf(w, "hello: %q", r.URL.Path)
+	g.POST("/login", func(c *gan.Context) {
+		c.JSON(http.StatusOK, gan.H{
+			"username": c.PostForm("username"),
+			"password": c.PostForm("password"),
+		})
 	})
 
 	g.Run(":9090")
