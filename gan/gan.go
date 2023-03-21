@@ -4,28 +4,50 @@ import (
 	"net/http"
 )
 
-type Handfunc func(c *Context)
+type HandlerFunc func(c *Context)
 
 type Engine struct {
-	router *router
+	router       *router
+	*RouterGroup // Engine 作为顶层核心，需要由其调用router group能力
 }
 
-func NewEngine() *Engine {
-	return &Engine{
+type RouterGroup struct {
+	prefix      string
+	middlewares []HandlerFunc // 支持中间件
+	engine      *Engine       // router group 需要有操作路由的能力
+}
+
+func New() *Engine {
+	engine := &Engine{
 		router: newRouter(),
 	}
+	engine.RouterGroup = &RouterGroup{
+		middlewares: make([]HandlerFunc, 1),
+		engine:      engine,
+	}
+	return engine
 }
 
-func (engine *Engine) addRoute(method string, pattern string, handler Handfunc) {
-	engine.router.addRoute(method, pattern, handler)
+func (group *RouterGroup) Group(prefix string) *RouterGroup {
+	newGroup := &RouterGroup{
+		prefix:      group.prefix + prefix,
+		middlewares: make([]HandlerFunc, 1),
+		engine:      group.engine,
+	}
+	return newGroup
 }
 
-func (engine *Engine) GET(pattern string, handler Handfunc) {
-	engine.addRoute("GET", pattern, handler)
+func (group *RouterGroup) addRoute(method string, pattern string, handler HandlerFunc) {
+	pattern = group.prefix + pattern
+	group.engine.router.addRoute(method, pattern, handler)
 }
 
-func (engine *Engine) POST(pattern string, handler Handfunc) {
-	engine.addRoute("POST", pattern, handler)
+func (group *RouterGroup) GET(pattern string, handler HandlerFunc) {
+	group.addRoute("GET", pattern, handler)
+}
+
+func (group *RouterGroup) POST(pattern string, handler HandlerFunc) {
+	group.addRoute("POST", pattern, handler)
 }
 
 func (engine *Engine) ServeHTTP(w http.ResponseWriter, r *http.Request) {

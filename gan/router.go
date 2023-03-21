@@ -6,7 +6,7 @@ import (
 
 type router struct {
 	root     *node
-	handlers map[string]Handfunc
+	handlers map[string]HandlerFunc
 }
 
 func newRouter() *router {
@@ -14,12 +14,12 @@ func newRouter() *router {
 		root: &node{
 			children: make(map[string]*node),
 		},
-		handlers: make(map[string]Handfunc),
+		handlers: make(map[string]HandlerFunc),
 	}
 
 }
 
-func (r *router) addRoute(method string, pattern string, handler Handfunc) {
+func (r *router) addRoute(method string, pattern string, handler HandlerFunc) {
 	r.root.insert(method, pattern)
 	key := method + "-" + pattern
 	r.handlers[key] = handler
