@@ -54,6 +54,19 @@ func TestFind2(t *testing.T) {
 	}
 }
 
+func TestFind3(t *testing.T) {
+	r := newTestNode()
+	node, params := r.find("GET", "/")
+	if node == nil {
+		t.Fatal("node shouldn't be nil")
+	}
+	if node.pattern != "/" {
+		t.Log(node.pattern)
+		t.Fatal("should match /")
+	}
+	t.Logf("matched path: %s, params['name']: %s\n", node.pattern, params["name"])
+}
+
 func TestParsePattern(t *testing.T) {
 	ok := reflect.DeepEqual(parsePattern("/p/:name"), []string{"p", ":name"})
 	ok = ok && reflect.DeepEqual(parsePattern("/p/*"), []string{"p", "*"})

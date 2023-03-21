@@ -143,6 +143,10 @@ func (n *node) find(method, pattern string) (child *node, params map[string]stri
 // 解析uri路径
 func parsePattern(pattern string) (parts []string) {
 	values := strings.Split(pattern, "/")
+	if pattern == "/" {
+		parts = append(parts, "/")
+		return
+	}
 	for _, val := range values {
 		if val != "" {
 			parts = append(parts, val)

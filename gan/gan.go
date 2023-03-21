@@ -2,13 +2,15 @@ package gan
 
 import (
 	"net/http"
+	"strings"
 )
 
 type HandlerFunc func(c *Context)
 
 type Engine struct {
 	router       *router
-	*RouterGroup // Engine 作为顶层核心，需要由其调用router group能力
+	*RouterGroup                // Engine 作为顶层核心，需要由其调用router group能力
+	groups       []*RouterGroup // 存储所有注册的 router group
 }
 
 type RouterGroup struct {
@@ -22,19 +24,24 @@ func New() *Engine {
 		router: newRouter(),
 	}
 	engine.RouterGroup = &RouterGroup{
-		middlewares: make([]HandlerFunc, 1),
-		engine:      engine,
+		engine: engine,
 	}
+	engine.groups = []*RouterGroup{engine.RouterGroup}
 	return engine
 }
 
 func (group *RouterGroup) Group(prefix string) *RouterGroup {
+	engine := group.engine
 	newGroup := &RouterGroup{
-		prefix:      group.prefix + prefix,
-		middlewares: make([]HandlerFunc, 1),
-		engine:      group.engine,
+		prefix: group.prefix + prefix,
+		engine: engine,
 	}
+	engine.groups = append(engine.groups, newGroup)
 	return newGroup
+}
+
+func (group *RouterGroup) Use(middlewares ...HandlerFunc) {
+	group.middlewares = append(group.middlewares, middlewares...)
 }
 
 func (group *RouterGroup) addRoute(method string, pattern string, handler HandlerFunc) {
@@ -51,7 +58,14 @@ func (group *RouterGroup) POST(pattern string, handler HandlerFunc) {
 }
 
 func (engine *Engine) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	var middlewares []HandlerFunc
+	for _, group := range engine.groups {
+		if strings.HasPrefix(r.URL.Path, group.prefix) {
+			middlewares = append(middlewares, group.middlewares...)
+		}
+	}
 	c := newContext(w, r)
+	c.handlers = middlewares
 	engine.router.handle(c)
 }
 
