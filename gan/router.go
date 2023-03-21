@@ -1,32 +1,40 @@
 package gan
 
 import (
-	"log"
 	"net/http"
 )
 
 type router struct {
+	root     *node
 	handlers map[string]Handfunc
 }
 
 func newRouter() *router {
 	return &router{
+		root: &node{
+			children: make(map[string]*node),
+		},
 		handlers: make(map[string]Handfunc),
 	}
 
 }
 
 func (r *router) addRoute(method string, pattern string, handler Handfunc) {
+	r.root.insert(method, pattern)
 	key := method + "-" + pattern
-	log.Printf("Route %4s - %s", method, pattern)
-	log.Printf("Router: %s", key)
 	r.handlers[key] = handler
 }
 
+func (r *router) getRoute(method string, pattern string) (node *node, params map[string]string) {
+	return r.root.find(method, pattern)
+}
+
 func (r *router) handle(c *Context) {
-	key := c.Method + "-" + c.Path
-	if handler, ok := r.handlers[key]; ok {
-		handler(c)
+	node, params := r.getRoute(c.Method, c.Path)
+	if node != nil {
+		c.Params = params
+		key := c.Method + "-" + node.pattern
+		r.handlers[key](c)
 	} else {
 		c.String(http.StatusNotFound, "404 NOT FOUND: %s\n", c.Path)
 	}
