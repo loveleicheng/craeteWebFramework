@@ -19,8 +19,7 @@ func FormatAsDate(t time.Time) string {
 }
 
 func main() {
-	r := gan.New()
-	r.Use(gan.Logger())
+	r := gan.Default()
 
 	r.SetFuncMap(template.FuncMap{
 		"FormatAsDate": FormatAsDate,
@@ -47,6 +46,11 @@ func main() {
 			"title": "gan",
 			"now":   time.Date(2023, 3, 22, 16, 21, 0, 0, time.UTC),
 		})
+	})
+
+	r.GET("/panic", func(c *gan.Context) {
+		names := []string{"lei"}
+		c.String(http.StatusOK, names[100])
 	})
 
 	r.Run(":9000")
